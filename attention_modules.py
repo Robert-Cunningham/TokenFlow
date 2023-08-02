@@ -73,12 +73,12 @@ class ExtendedAttention(nn.Module):
     def forward(self, hidden_states, encoder_hidden_states=None, attention_mask=None, **cross_attention_kwargs):
         # we batch by polarity (positive / negative prompt), so positive and negative prompts don't cross-attend.
 
-        b = hidden_states.shape[0]
-        hidden_states = rearrange(hidden_states, "b hw c -> 1 (b hw) c")
+        b = hidden_states.shape[0] // 2
+        hidden_states = rearrange(hidden_states, "(p b) hw c -> p (b hw) c", p=2)
         if encoder_hidden_states is not None:
-            encoder_hidden_states = reduce(encoder_hidden_states, "b t c -> 1 t c", "mean")
+            encoder_hidden_states = reduce(encoder_hidden_states, "(p b) t c -> p t c", "mean", p=2)
         out = self.base_attn.forward(hidden_states, encoder_hidden_states, attention_mask, **cross_attention_kwargs)
-        out = rearrange(out, "1 (b hw) c -> b hw c", b=b)
+        out = rearrange(out, "p (b hw) c -> (p b) hw c", b=b, p=2)
 
         self.history = out.detach()  # out.chunk(2)[1].detach()
         return out
