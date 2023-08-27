@@ -36,6 +36,9 @@ class CorrespondingAttention(nn.Module):
         self.history = None
 
     def forward(self, hidden_states, encoder_hidden_states=None, attention_mask=None, **cross_attention_kwargs):
+        if self.index % 2 == 1:
+            return self.base_attn(hidden_states, encoder_hidden_states, attention_mask, **cross_attention_kwargs)
+
         my_layer_corr = self.attn_transitions[self.index]
         my_layer_keyframe_attns = self.keyframe_attns[self.index]  # batch hw c
 
